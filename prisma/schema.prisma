@@ -1,0 +1,46 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String        @id @default(cuid())
+  name      String
+  domain    String        @unique
+  brandName String
+  createdAt DateTime      @default(now())
+  audits    AuditReport[]
+  geoChecks GeoCheck[]
+}
+
+model AuditReport {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url         String
+  seoScore    Int
+  aeoScore    Int
+  geoScore    Int
+  hasLlmsTxt  Boolean
+  schemaTypes String[]
+  issues      Json
+  createdAt   DateTime @default(now())
+}
+
+model GeoCheck {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  prompt         String
+  llmProvider    String
+  brandMentioned Boolean
+  sentiment      String
+  citedUrls      String[]
+  rawResponse    String
+  createdAt      DateTime @default(now())
+}
