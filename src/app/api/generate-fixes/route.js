@@ -8,7 +8,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GEMINI_API_KEY,
 });
 
-const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const MODELS = ['gemini-3.8-flash-lite', 'gemini-3.8-flash'];
 
 const BROWSER_HEADERS = {
     'User-Agent':

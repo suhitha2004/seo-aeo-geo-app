@@ -472,7 +472,7 @@ export default function Home() {
               : `${geoBrand} was not mentioned in the AI response.`),
           competitors,
           rawResponse: data.geoCheck?.rawResponse || data.rawResponse || '',
-          modelUsed: data.modelUsed || data.geoCheck?.llmProvider || 'gemini-2.5-flash-lite',
+          modelUsed: data.modelUsed || data.geoCheck?.llmProvider || 'gemini-3.8-flash-lite',
         });
 
         if (i < prompts.length - 1) {
@@ -854,8 +854,8 @@ export default function Home() {
                         <span
                           key={bot}
                           className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${status === 'Allowed'
-                              ? 'bg-emerald-950/50 border-emerald-800/70 text-emerald-300'
-                              : 'bg-rose-950/50 border-rose-800/70 text-rose-300'
+                            ? 'bg-emerald-950/50 border-emerald-800/70 text-emerald-300'
+                            : 'bg-rose-950/50 border-rose-800/70 text-rose-300'
                             }`}
                         >
                           {bot}: {status}
@@ -1095,10 +1095,10 @@ export default function Home() {
                     <p className="text-xs text-slate-400">JS-Dependency Risk</p>
                     <p
                       className={`text-2xl font-bold mt-1 ${xrayResult.jsRiskLevel === 'Low'
-                          ? 'text-emerald-400'
-                          : xrayResult.jsRiskLevel === 'Moderate'
-                            ? 'text-amber-400'
-                            : 'text-rose-400'
+                        ? 'text-emerald-400'
+                        : xrayResult.jsRiskLevel === 'Moderate'
+                          ? 'text-amber-400'
+                          : 'text-rose-400'
                         }`}
                     >
                       {xrayResult.jsRiskLevel}
@@ -1244,8 +1244,8 @@ export default function Home() {
                         type="button"
                         onClick={() => setRobotsPolicyMode('search-only')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${robotsPolicyMode === 'search-only'
-                            ? 'bg-violet-600 border-violet-500 text-white'
-                            : 'bg-[#060b19] border-slate-700 text-slate-300'
+                          ? 'bg-violet-600 border-violet-500 text-white'
+                          : 'bg-[#060b19] border-slate-700 text-slate-300'
                           }`}
                       >
                         AI Search Only (Block Training)
@@ -1254,8 +1254,8 @@ export default function Home() {
                         type="button"
                         onClick={() => setRobotsPolicyMode('allow-all')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${robotsPolicyMode === 'allow-all'
-                            ? 'bg-violet-600 border-violet-500 text-white'
-                            : 'bg-[#060b19] border-slate-700 text-slate-300'
+                          ? 'bg-violet-600 border-violet-500 text-white'
+                          : 'bg-[#060b19] border-slate-700 text-slate-300'
                           }`}
                       >
                         Allow All AI Bots
@@ -1909,8 +1909,8 @@ export default function Home() {
                           <div className="flex items-center gap-2 shrink-0">
                             <span
                               className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${run.mentioned
-                                  ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
-                                  : 'bg-rose-950/60 border-rose-800 text-rose-300'
+                                ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
+                                : 'bg-rose-950/60 border-rose-800 text-rose-300'
                                 }`}
                             >
                               {run.mentioned
