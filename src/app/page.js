@@ -890,11 +890,10 @@ export default function Home() {
                   {/* Human-in-the-Loop Permission Gate Card (Prominently displayed when PR is created) */}
                   {fixerResult.prUrl && (
                     <Card
-                      className={`p-6 border-2 relative overflow-hidden transition-all duration-300 ${
-                        deployResult?.merged
+                      className={`p-6 border-2 relative overflow-hidden transition-all duration-300 ${deployResult?.merged
                           ? 'border-emerald-500/50 bg-gradient-to-b from-emerald-950/25 to-zinc-900/60'
                           : 'border-amber-500/50 bg-gradient-to-b from-amber-950/20 to-zinc-900/60 shadow-lg shadow-amber-500/5'
-                      }`}
+                        }`}
                     >
                       {deployResult?.merged ? (
                         <div className="space-y-3">
@@ -1071,11 +1070,10 @@ export default function Home() {
                             key={tab.id}
                             type="button"
                             onClick={() => setFixerCodeMode(tab.id)}
-                            className={`px-3 py-1.5 rounded-md text-xs font-mono transition ${
-                              fixerCodeMode === tab.id
+                            className={`px-3 py-1.5 rounded-md text-xs font-mono transition ${fixerCodeMode === tab.id
                                 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                                 : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
-                            }`}
+                              }`}
                           >
                             {tab.label}
                           </button>
@@ -1452,7 +1450,7 @@ export default function Home() {
                                   className={`px-2.5 py-1 rounded-md transition ${sitemapSourceFilter === tab.id
                                     ? 'bg-zinc-800 text-white font-medium'
                                     : 'text-zinc-400 hover:text-zinc-200'
-                                  }`}
+                                    }`}
                                 >
                                   {tab.label}
                                 </button>
