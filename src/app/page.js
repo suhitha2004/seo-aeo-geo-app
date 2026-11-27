@@ -480,7 +480,14 @@ export default function Home() {
         const res = await fetch('/api/geo-check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ brandName: geoBrand, domain: geoDomain, prompt: prompts[i], aiProvider: selectedAiEngine }),
+          body: JSON.stringify({
+            brandName: geoBrand,
+            domain: geoDomain,
+            prompt: prompts[i],
+            aiProvider: selectedAiEngine,
+            aiEngine: selectedAiEngine,
+            provider: selectedAiEngine,
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Prompt ${i + 1} failed`);
@@ -494,7 +501,7 @@ export default function Home() {
           insight: evalData.visibilityInsight || evalData.reasoning || (mentioned ? `${geoBrand} was cited in the AI response.` : `${geoBrand} was not mentioned.`),
           competitors: evalData.competitorsMentioned || [],
           rawResponse: data.geoCheck?.rawResponse || data.rawResponse || '',
-          modelUsed: data.modelUsed || data.geoCheck?.llmProvider || 'gemini-3.8-flash',
+          modelUsed: data.modelUsed || data.geoCheck?.llmProvider || selectedAiEngine,
         });
         if (i < prompts.length - 1) await new Promise((r) => setTimeout(r, 1200));
       }

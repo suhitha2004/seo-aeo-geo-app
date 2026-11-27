@@ -41,6 +41,6 @@ model GeoCheck {
   brandMentioned Boolean
   sentiment      String
   citedUrls      String[]
-  rawResponse    String
+  rawResponse    String?
   createdAt      DateTime @default(now())
 }

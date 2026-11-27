@@ -27,7 +27,9 @@ const evaluationSchema = z.object({
 
 export async function POST(request) {
     try {
-        const { domain, brandName, prompt, aiProvider } = await request.json();
+        const body = await request.json();
+        const { domain, brandName, prompt } = body;
+        const chosenProvider = (body.aiProvider || body.aiEngine || body.provider || 'auto').toString().trim().toLowerCase();
 
         if (!domain || !brandName || !prompt) {
             return NextResponse.json(
@@ -41,14 +43,17 @@ export async function POST(request) {
             .replace(/^www\./, '')
             .split('/')[0];
 
-        // 1. Simulate a real user prompt against the LLM with automatic fallback
-        const { text: rawResponse, modelUsed: usedModel, providerUsed } = await generateTextWithFallback(
+        // 1. Simulate a real user prompt against the LLM with automatic fallback using chosen provider
+        const textResult = await generateTextWithFallback(
             { prompt },
-            aiProvider || 'auto'
+            chosenProvider
         );
+        const rawText = textResult?.text || textResult?.rawResponse || (typeof textResult === 'string' ? textResult : '');
+        const usedModel = textResult?.modelUsed || chosenProvider;
+        const providerUsed = textResult?.providerUsed || chosenProvider;
 
         // 2. Grade the LLM response for brand visibility, rank, sentiment, and competitors
-        const { object: analysis, modelUsed: evalModel } = await generateObjectWithFallback(
+        const { object: analysis } = await generateObjectWithFallback(
             {
                 schema: evaluationSchema,
                 prompt: `Evaluate the following AI assistant response for visibility of the brand "${brandName}" (domain: ${cleanDomain}).
@@ -57,12 +62,12 @@ User Prompt Asked: "${prompt}"
 
 AI Assistant Response:
 """
-${rawResponse}
+${rawText}
 """
 
 Determine whether "${brandName}" or "${cleanDomain}" was mentioned, its sentiment, its list position (if ranked), any URLs cited, and what competing brands appeared instead.`,
             },
-            aiProvider || 'auto'
+            chosenProvider
         );
 
         // 3. Ensure Project exists and save the GeoCheck record in Neon PostgreSQL
@@ -76,15 +81,23 @@ Determine whether "${brandName}" or "${cleanDomain}" was mentioned, its sentimen
             },
         });
 
+        // Always guarantee rawResponse is passed as requested
+        const finalRawResponse =
+            (typeof rawText === 'string' && rawText.trim().length > 0)
+                ? rawText
+                : (typeof textResult === 'object' ? JSON.stringify(textResult) : '') ||
+                  (typeof analysis === 'object' ? JSON.stringify(analysis) : '') ||
+                  '';
+
         const geoCheck = await prisma.geoCheck.create({
             data: {
                 projectId: project.id,
                 prompt,
-                llmProvider: usedModel,
-                brandMentioned: analysis.brandMentioned,
-                sentiment: analysis.sentiment,
-                citedUrls: analysis.citedUrls,
-                rawResponse,
+                llmProvider: usedModel || providerUsed || chosenProvider,
+                brandMentioned: Boolean(analysis.brandMentioned),
+                sentiment: analysis.sentiment || 'neutral',
+                citedUrls: Array.isArray(analysis.citedUrls) ? analysis.citedUrls : [],
+                rawResponse: finalRawResponse,
             },
         });
 
@@ -93,6 +106,7 @@ Determine whether "${brandName}" or "${cleanDomain}" was mentioned, its sentimen
             analysis,
             modelUsed: usedModel,
             providerUsed,
+            rawResponse: finalRawResponse,
         });
     } catch (error) {
         console.error('GEO Check Error:', error);
