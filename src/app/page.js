@@ -190,6 +190,7 @@ function MetricCard({ label, value, suffix, icon: Icon, tone = 'zinc', subtitle 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('audit');
   const [error, setError] = useState('');
+  const [selectedAiEngine, setSelectedAiEngine] = useState('auto'); // 'auto' | 'google' | 'openai' | 'anthropic' | 'groq'
 
   // Module 1
   const [auditUrl, setAuditUrl] = useState('');
@@ -337,7 +338,11 @@ export default function Home() {
     setMultiCrawlResults(null); setGeneratedFixes(null);
     const normalizedUrl = /^https?:\/\//i.test(targetUrl.trim()) ? targetUrl.trim() : `https://${targetUrl.trim()}`;
     try {
-      const res = await fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: normalizedUrl, brandName: brand }) });
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: normalizedUrl, brandName: brand, aiProvider: selectedAiEngine }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Audit failed');
       setAuditResult(data); fetchHistory();
@@ -359,6 +364,7 @@ export default function Home() {
           brandName: fixerBrand.trim(),
           githubRepo: fixerRepo.trim(),
           githubToken: fixerToken.trim(),
+          aiProvider: selectedAiEngine,
         }),
       });
       const data = await res.json();
@@ -407,7 +413,11 @@ export default function Home() {
     setError(''); setFixLoading(true);
     const normalizedUrl = /^https?:\/\//i.test(rawTarget) ? rawTarget : `https://${rawTarget}`;
     try {
-      const res = await fetch('/api/generate-fixes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: normalizedUrl, brandName: brandNameInput }) });
+      const res = await fetch('/api/generate-fixes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: normalizedUrl, brandName: brandNameInput, aiProvider: selectedAiEngine }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate fixes');
       setGeneratedFixes(data.fixes);
@@ -467,7 +477,11 @@ export default function Home() {
     try {
       for (let i = 0; i < prompts.length; i++) {
         setGeoProgress(`Analyzing prompt ${i + 1} of ${prompts.length}...`);
-        const res = await fetch('/api/geo-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName: geoBrand, domain: geoDomain, prompt: prompts[i] }) });
+        const res = await fetch('/api/geo-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brandName: geoBrand, domain: geoDomain, prompt: prompts[i], aiProvider: selectedAiEngine }),
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Prompt ${i + 1} failed`);
         const evalData = data.analysis || data.geoCheck || data;
@@ -552,9 +566,12 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span>PostgreSQL Connected</span>
+            <span>Neon PostgreSQL Online</span>
           </div>
-          <p className="text-[10px] font-mono text-zinc-600">gemini-3.8-flash</p>
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-500">
+            <Zap className="w-3 h-3 text-indigo-400" />
+            <span>Engine: {selectedAiEngine === 'auto' ? 'Auto Fallback' : selectedAiEngine.toUpperCase()}</span>
+          </div>
         </div>
       </aside>
 
@@ -566,9 +583,34 @@ export default function Home() {
             <span className="text-zinc-700 hidden sm:inline">/</span>
             <span className="font-semibold text-zinc-100">{activeMeta?.label || 'Site Audit'}</span>
           </div>
-          <Button variant="secondary" size="sm" onClick={() => window.print()}>
-            <Printer className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Export PDF</span>
-          </Button>
+
+          <div className="flex items-center gap-3">
+            {/* AI Engine Selector */}
+            <div className="flex items-center gap-2 bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 rounded-xl px-3 py-1.5 transition">
+              <Bot className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <label htmlFor="ai-engine-select" className="text-zinc-400 text-xs font-medium hidden md:inline shrink-0">
+                AI Engine:
+              </label>
+              <select
+                id="ai-engine-select"
+                value={selectedAiEngine}
+                onChange={(e) => setSelectedAiEngine(e.target.value)}
+                className="bg-transparent text-zinc-200 text-xs font-medium focus:outline-none cursor-pointer"
+              >
+                <option value="auto" className="bg-zinc-900 text-zinc-100">⚡ Auto Fallback (Resilient)</option>
+                <option value="google" className="bg-zinc-900 text-zinc-100">Google Gemini (3.8 Flash)</option>
+                <option value="groq" className="bg-zinc-900 text-zinc-100">Groq (GPT-OSS 120B)</option>
+                <option value="openrouter" className="bg-zinc-900 text-zinc-100">OpenRouter (Free)</option>
+                <option value="mistral" className="bg-zinc-900 text-zinc-100">Mistral (Free)</option>
+                <option value="openai" className="bg-zinc-900 text-zinc-100">OpenAI (GPT-4o Mini)</option>
+                <option value="anthropic" className="bg-zinc-900 text-zinc-100">Anthropic Claude (Sonnet 4.6)</option>
+              </select>
+            </div>
+
+            <Button variant="secondary" size="sm" onClick={() => window.print()}>
+              <Printer className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Export PDF</span>
+            </Button>
+          </div>
         </header>
 
         {/* Mobile nav */}

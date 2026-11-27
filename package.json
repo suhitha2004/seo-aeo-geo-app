@@ -10,7 +10,9 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.110",
     "@ai-sdk/google": "^4.0.123",
+    "@ai-sdk/groq": "^4.0.88",
     "@ai-sdk/openai": "^4.0.122",
     "@neondatabase/serverless": "^1.2.1",
     "@prisma/adapter-neon": "^7.10.1",
@@ -29,7 +31,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@tailwindcss/turbopack": "4.3.3",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3"

@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
-import { generateObject } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateObjectWithFallback } from '@/lib/ai-provider';
 import { z } from 'zod';
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
-
-const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
 const BROWSER_HEADERS = {
     'User-Agent':
@@ -47,14 +40,7 @@ const fixSchema = z.object({
 
 export async function POST(request) {
     try {
-        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('your_gemini')) {
-            return NextResponse.json(
-                { error: 'Please add a valid GEMINI_API_KEY to your .env file and restart the server.' },
-                { status: 400 }
-            );
-        }
-
-        const { url, brandName } = await request.json();
+        const { url, brandName, aiProvider } = await request.json();
         if (!url) {
             return NextResponse.json({ error: 'URL is required' }, { status: 400 });
         }
@@ -104,31 +90,19 @@ Generate:
 3. 4 question-based H2 headings to improve Answer Engine visibility.
 4. 3 "Answer-First" citability blocks (a question heading paired with a 45-60 word standalone, factual third-person paragraph that directly answers the query without marketing fluff so LLMs and Featured Snippets quote it verbatim).`;
 
-        let generatedObject = null;
-        let usedModel = MODELS[0];
-        let lastError = null;
+        const { object: generatedObject, modelUsed, providerUsed } = await generateObjectWithFallback(
+            {
+                schema: fixSchema,
+                prompt: promptText,
+            },
+            aiProvider || 'auto'
+        );
 
-        for (const modelId of MODELS) {
-            try {
-                const { object } = await generateObject({
-                    model: google(modelId),
-                    schema: fixSchema,
-                    prompt: promptText,
-                });
-                generatedObject = object;
-                usedModel = modelId;
-                break;
-            } catch (err) {
-                lastError = err;
-                console.warn(`Model ${modelId} failed in generate-fixes, trying fallback...`, err?.message);
-            }
-        }
-
-        if (!generatedObject) {
-            throw lastError;
-        }
-
-        return NextResponse.json({ fixes: generatedObject, modelUsed: usedModel });
+        return NextResponse.json({
+            fixes: generatedObject,
+            modelUsed,
+            providerUsed,
+        });
     } catch (error) {
         console.error('Fix Generator Error:', error);
         return NextResponse.json(

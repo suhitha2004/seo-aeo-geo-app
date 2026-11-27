@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateObject } from 'ai';
+import { generateObjectWithFallback } from '@/lib/ai-provider';
 import { z } from 'zod';
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
-
-const MODELS = ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
 const BROWSER_HEADERS = {
     'User-Agent':
@@ -73,14 +66,7 @@ const FixerOutputSchema = z.object({
 
 export async function POST(req) {
     try {
-        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('your_gemini')) {
-            return NextResponse.json(
-                { error: 'Gemini API key is not configured. Please add GEMINI_API_KEY to your .env file.' },
-                { status: 500 }
-            );
-        }
-
-        const { url, brandName, githubRepo, githubToken } = await req.json();
+        const { url, brandName, githubRepo, githubToken, aiProvider } = await req.json();
         if (!url) {
             return NextResponse.json({ error: 'Target URL is required.' }, { status: 400 });
         }
@@ -312,7 +298,7 @@ export async function POST(req) {
         };
 
         // =========================================================================
-        // STEP 2: Gemini Generation (gemini-3.8-flash with 503 fallback)
+        // STEP 2: Resilient AI Generation with automatic provider/model fallback
         // =========================================================================
         const promptText = `You are a Principal Technical SEO, AEO & GEO Autonomous Engineer.
 Analyze this deep-crawl diagnostic snapshot and generate complete, production-grade files and code patches for the brand "${brand}" (${normalizedUrl}).
@@ -337,27 +323,13 @@ Requirements for Output:
 6. "sitemapXmlContent": Complete, valid XML sitemap with <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> containing the discovered pages (up to 30 sample URLs with <loc>, <lastmod>, <changefreq>, <priority>).
 7. "seoSchemaJsonContent": Valid standalone JSON string (without <script> tags) containing structured JSON-LD schema for the site.`;
 
-        let generatedObject = null;
-        let lastError = null;
-
-        for (const modelId of MODELS) {
-            try {
-                const { object } = await generateObject({
-                    model: google(modelId),
-                    schema: FixerOutputSchema,
-                    prompt: promptText,
-                });
-                generatedObject = object;
-                break;
-            } catch (err) {
-                lastError = err;
-                console.warn(`Model ${modelId} failed in tech-fixer, trying fallback...`, err?.message);
-            }
-        }
-
-        if (!generatedObject) {
-            throw lastError || new Error('Failed to generate technical SEO fixes with all configured models.');
-        }
+        const { object: generatedObject, modelUsed, providerUsed } = await generateObjectWithFallback(
+            {
+                schema: FixerOutputSchema,
+                prompt: promptText,
+            },
+            aiProvider || 'auto'
+        );
 
         // =========================================================================
         // STEP 3: GitHub REST API Integration (Staging Branch + Commits + Pending PR)
@@ -609,6 +581,8 @@ ${generatedObject.summary}
             prNumber,
             branchName,
             filesChanged,
+            modelUsed,
+            providerUsed,
             ...generatedObject,
         });
     } catch (err) {

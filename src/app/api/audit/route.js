@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import { prisma } from '@/lib/prisma';
+import { getConfiguredProviders } from '@/lib/ai-provider';
 
 const BROWSER_HEADERS = {
     'User-Agent':
@@ -11,7 +12,7 @@ const BROWSER_HEADERS = {
 
 export async function POST(request) {
     try {
-        const { url, brandName, skipSave } = await request.json();
+        const { url, brandName, skipSave, aiProvider } = await request.json();
 
         if (!url) {
             return NextResponse.json({ error: 'URL is required' }, { status: 400 });
@@ -292,6 +293,7 @@ export async function POST(request) {
             hasSitemap,
             sitemapUrlCount,
             discoveredUrls,
+            configuredProviders: getConfiguredProviders(),
         });
     } catch (error) {
         console.error('Audit Error:', error);
